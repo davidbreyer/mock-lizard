@@ -19,7 +19,7 @@ const ruleRows = document.querySelector("#ruleRows");
 const ruleCount = document.querySelector("#ruleCount");
 const releaseStamp = document.querySelector("#releaseStamp");
 
-const appRelease = "20260610-2134";
+const appRelease = "20260610-2154";
 
 const samplePayload = {
   id: 1024,
@@ -220,6 +220,7 @@ function generateValue(value, path, index, random) {
 
 function mockPrimitive(value, path, index, random) {
   const name = path.toLowerCase();
+  const field = normalizeFieldName(path);
 
   if (typeof value === "boolean") {
     return random() > 0.5;
@@ -233,49 +234,53 @@ function mockPrimitive(value, path, index, random) {
     return null;
   }
 
-  if (name.endsWith(".id") || name === "$.id" || name.includes("userid") || name.includes("user_id")) {
+  if (field === "id" || field.endsWith("id") || field.includes("userid")) {
     return 1000 + index + randomInt(random, 1, 9000);
   }
 
-  if (name.includes("email")) {
+  if (field.includes("email")) {
     const first = pick(firstNames, random).toLowerCase();
     const last = pick(lastNames, random).toLowerCase().replace(/[^a-z]/g, "");
     return `${first}.${last}${index + 1}@example.com`;
   }
 
-  if (name.includes("firstname")) {
+  if (field.includes("phone") || field.includes("mobile") || field.includes("telephone")) {
+    return mockPhoneNumber(random);
+  }
+
+  if (field.includes("firstname")) {
     return pick(firstNames, random);
   }
 
-  if (name.includes("lastname")) {
+  if (field.includes("lastname")) {
     return pick(lastNames, random);
   }
 
-  if (name.includes("name") || name.includes("owner")) {
+  if (field.includes("name") || field.includes("owner")) {
     return `${pick(firstNames, random)} ${pick(lastNames, random)}`;
   }
 
-  if (name.includes("company") || name.includes("organization")) {
+  if (field.includes("company") || field.includes("organization")) {
     return pick(companies, random);
   }
 
-  if (name.includes("city")) {
+  if (field.includes("city")) {
     return pick(cities, random);
   }
 
-  if (name.includes("status")) {
+  if (field.includes("status")) {
     return pick(statuses, random);
   }
 
-  if (name.includes("role")) {
+  if (field.includes("role")) {
     return pick(roles, random);
   }
 
-  if (name.includes("plan")) {
+  if (field.includes("plan")) {
     return pick(plans, random);
   }
 
-  if (name.includes("date") || name.includes("time") || name.endsWith("at")) {
+  if (field.includes("date") || field.includes("time") || field.endsWith("at")) {
     return mockIsoDate(index, random);
   }
 
@@ -324,8 +329,16 @@ function mockText(value, random) {
   return `${capitalize(pick(words, random))} ${capitalize(pick(words, random))}`;
 }
 
+function mockPhoneNumber(random) {
+  const area = randomInt(random, 200, 989);
+  const prefix = randomInt(random, 200, 999);
+  const line = String(randomInt(random, 0, 9999)).padStart(4, "0");
+  return `(${area}) ${prefix}-${line}`;
+}
+
 function getGeneratorName(path, value) {
   const name = path.toLowerCase();
+  const field = normalizeFieldName(path);
 
   if (Array.isArray(value)) {
     return "array";
@@ -335,31 +348,35 @@ function getGeneratorName(path, value) {
     return "object";
   }
 
-  if (name.endsWith(".id") || name === "$.id" || name.includes("userid")) {
+  if (field === "id" || field.endsWith("id") || field.includes("userid")) {
     return "id";
   }
 
-  if (name.includes("email")) {
+  if (field.includes("email")) {
     return "email";
   }
 
-  if (name.includes("name")) {
+  if (field.includes("phone") || field.includes("mobile") || field.includes("telephone")) {
+    return "phone";
+  }
+
+  if (field.includes("name")) {
     return "name";
   }
 
-  if (name.includes("date") || name.includes("time") || name.endsWith("at") || looksLikeIsoDate(value)) {
+  if (field.includes("date") || field.includes("time") || field.endsWith("at") || looksLikeIsoDate(value)) {
     return "iso date";
   }
 
-  if (name.includes("status")) {
+  if (field.includes("status")) {
     return "status";
   }
 
-  if (name.includes("role")) {
+  if (field.includes("role")) {
     return "role";
   }
 
-  if (name.includes("price") || name.includes("amount") || name.includes("total")) {
+  if (field.includes("price") || field.includes("amount") || field.includes("total")) {
     return "money";
   }
 
@@ -518,6 +535,12 @@ function isPlainObject(value) {
 
 function looksLikeIsoDate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value);
+}
+
+function normalizeFieldName(path) {
+  const match = path.match(/(?:\.|\$)(?:"([^"]+)"|([^.[\]]+))(?:\[\d+\])?$/);
+  const key = match ? (match[1] || match[2]) : path;
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function mockIsoDate(index, random) {
