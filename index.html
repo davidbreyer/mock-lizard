@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mock Lizard</title>
+    <link rel="icon" type="image/png" href="assets/apple-icon.png?v=20260610-2134">
+    <link rel="apple-touch-icon" href="assets/apple-icon.png?v=20260610-2134">
+    <link rel="stylesheet" href="styles.css?v=20260610-2134">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="top-bar">
+        <div class="brand-lockup">
+          <img src="assets/yelling-lizard-logo.png?v=20260610-2134" alt="" class="brand-logo" width="72" height="72">
+          <div>
+            <p class="eyebrow">API mock data generator</p>
+            <h1>Mock Lizard</h1>
+          </div>
+        </div>
+        <div class="action-bar" aria-label="Mock data actions">
+          <details class="tools-menu">
+            <summary>Tools</summary>
+            <div class="tools-menu-list">
+              <a href="https://davidbreyer.github.io/format-lizard/">Format Lizard</a>
+              <a href="https://davidbreyer.github.io/compare-lizard/">Compare Lizard</a>
+              <a href="https://davidbreyer.github.io/mock-lizard/" aria-current="page">Mock Lizard</a>
+            </div>
+          </details>
+          <button id="openButton" type="button">Open</button>
+          <button id="generateButton" type="button" class="primary-button">Generate</button>
+          <button id="copyButton" type="button">Copy</button>
+          <button id="saveButton" type="button">Save</button>
+          <button id="clearButton" type="button" class="ghost-button">Clear</button>
+          <input id="fileInput" class="file-input" type="file" accept=".json,.txt,application/json,text/plain">
+        </div>
+      </header>
+
+      <section class="control-panel" aria-label="Mock data controls">
+        <div class="control-group">
+          <span class="control-group-title">Generate</span>
+          <div class="control-row">
+            <label class="field-label" for="recordCount">Records</label>
+            <input id="recordCount" type="number" min="1" max="500" step="1" value="5">
+
+            <label class="field-label" for="outputShape">Shape</label>
+            <select id="outputShape">
+              <option value="array">Array</option>
+              <option value="single">Single object</option>
+              <option value="paginated">Paginated response</option>
+            </select>
+
+            <label class="field-label" for="seedInput">Seed</label>
+            <input id="seedInput" type="text" value="lizard">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-group-title">Options</span>
+          <div class="control-row">
+            <label class="checkbox-control" for="nullableFields">
+              <input id="nullableFields" type="checkbox" checked>
+              <span>Allow nulls</span>
+            </label>
+            <label class="checkbox-control" for="prettyJson">
+              <input id="prettyJson" type="checkbox" checked>
+              <span>Pretty JSON</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-row" aria-live="polite">
+        <div id="status" class="status-pill status-idle">Ready</div>
+        <div id="stats" class="stats">0 records</div>
+      </section>
+
+      <section class="editor-grid" aria-label="Mock data editors">
+        <div class="editor-pane">
+          <div class="pane-header">
+            <label for="sourceInput">Sample JSON</label>
+            <span id="inputCount">0 chars</span>
+          </div>
+          <textarea id="sourceInput" spellcheck="false" aria-label="Sample JSON input"></textarea>
+        </div>
+
+        <div class="editor-pane">
+          <div class="pane-header">
+            <label for="mockOutput">Mock Output</label>
+            <span id="outputCount">0 chars</span>
+          </div>
+          <textarea id="mockOutput" spellcheck="false" readonly aria-label="Generated mock JSON output"></textarea>
+        </div>
+      </section>
+
+      <section class="rules-panel" aria-label="Inferred field rules">
+        <div class="pane-header">
+          <label for="ruleRows">Inferred Rules</label>
+          <span id="ruleCount">0 fields</span>
+        </div>
+        <div class="rules-table" role="table" aria-describedby="ruleCount">
+          <div class="rules-head" role="row">
+            <span role="columnheader">Path</span>
+            <span role="columnheader">Type</span>
+            <span role="columnheader">Generator</span>
+            <span role="columnheader">Example</span>
+          </div>
+          <div id="ruleRows" class="rule-rows" role="rowgroup"></div>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <span>Ready to fake it responsibly.</span>
+        <span>
+          <a href="https://github.com/davidbreyer/mock-lizard" target="_blank" rel="noreferrer">GitHub</a>
+          <span id="releaseStamp" data-version>Version: 20260610-2134</span>
+        </span>
+      </footer>
+    </main>
+
+    <script src="script.js?v=20260610-2134"></script>
+  </body>
+</html>
