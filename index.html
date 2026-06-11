@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mock Lizard</title>
-    <link rel="icon" type="image/png" href="assets/apple-icon.png?v=20260610-2154">
-    <link rel="apple-touch-icon" href="assets/apple-icon.png?v=20260610-2154">
-    <link rel="stylesheet" href="styles.css?v=20260610-2154">
+    <link rel="icon" type="image/png" href="assets/apple-icon.png?v=20260610-2220">
+    <link rel="apple-touch-icon" href="assets/apple-icon.png?v=20260610-2220">
+    <link rel="stylesheet" href="styles.css?v=20260610-2220">
   </head>
   <body>
     <main class="app-shell">
       <header class="top-bar">
         <div class="brand-lockup">
-          <img src="assets/yelling-lizard-logo.png?v=20260610-2154" alt="" class="brand-logo" width="72" height="72">
+          <img src="assets/yelling-lizard-logo.png?v=20260610-2220" alt="" class="brand-logo" width="72" height="72">
           <div>
             <p class="eyebrow">API mock data generator</p>
             <h1>Mock Lizard</h1>
@@ -70,6 +70,19 @@
         </div>
       </section>
 
+      <section class="format-panel" aria-label="Custom format controls">
+        <div class="control-group">
+          <label class="control-group-title" for="customFormats">Formats</label>
+          <textarea
+            id="customFormats"
+            class="format-input"
+            spellcheck="false"
+            placeholder="contractNumber=#######&#10;policyNumber=POL-#######&#10;claimNumber=CLM-??-####"
+            aria-label="Custom field formats"
+          ></textarea>
+        </div>
+      </section>
+
       <section class="status-row" aria-live="polite">
         <div id="status" class="status-pill status-idle">Ready</div>
         <div id="stats" class="stats">0 records</div>
@@ -113,11 +126,11 @@
         <span>Ready to fake it responsibly.</span>
         <span>
           <a href="https://github.com/davidbreyer/mock-lizard" target="_blank" rel="noreferrer">GitHub</a>
-          <span id="releaseStamp" data-version>Version: 20260610-2154</span>
+          <span id="releaseStamp" data-version>Version: 20260610-2220</span>
         </span>
       </footer>
     </main>
 
-    <script src="script.js?v=20260610-2154"></script>
+    <script src="script.js?v=20260610-2220"></script>
   </body>
 </html>

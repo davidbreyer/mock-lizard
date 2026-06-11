@@ -3,6 +3,7 @@ const mockOutput = document.querySelector("#mockOutput");
 const recordCount = document.querySelector("#recordCount");
 const outputShape = document.querySelector("#outputShape");
 const seedInput = document.querySelector("#seedInput");
+const customFormats = document.querySelector("#customFormats");
 const nullableFields = document.querySelector("#nullableFields");
 const prettyJson = document.querySelector("#prettyJson");
 const openButton = document.querySelector("#openButton");
@@ -19,7 +20,7 @@ const ruleRows = document.querySelector("#ruleRows");
 const ruleCount = document.querySelector("#ruleCount");
 const releaseStamp = document.querySelector("#releaseStamp");
 
-const appRelease = "20260610-2154";
+const appRelease = "20260610-2220";
 
 const samplePayload = {
   id: 1024,
@@ -65,6 +66,7 @@ sourceInput.addEventListener("input", handleSourceInput);
 recordCount.addEventListener("change", generateMockData);
 outputShape.addEventListener("change", generateMockData);
 seedInput.addEventListener("input", generateMockData);
+customFormats.addEventListener("input", generateMockData);
 nullableFields.addEventListener("change", generateMockData);
 prettyJson.addEventListener("change", generateMockData);
 
@@ -116,9 +118,10 @@ function generateMockData() {
   }
 
   const count = outputShape.value === "single" ? 1 : getRecordCount();
-  const random = createRandom(`${seedInput.value || "lizard"}:${JSON.stringify(template)}:${count}:${outputShape.value}`);
-  currentRules = inferRules(template, "$");
-  const records = Array.from({ length: count }, (_, index) => generateValue(template, "$", index, random));
+  const formatOverrides = parseFormatOverrides(customFormats.value);
+  const random = createRandom(`${seedInput.value || "lizard"}:${JSON.stringify(template)}:${count}:${outputShape.value}:${customFormats.value}`);
+  currentRules = inferRules(template, "$", formatOverrides);
+  const records = Array.from({ length: count }, (_, index) => generateValue(template, "$", index, random, formatOverrides));
   const output = wrapOutput(records, count);
   mockOutput.value = JSON.stringify(output, null, prettyJson.checked ? 2 : 0);
   renderRules();
@@ -153,12 +156,12 @@ function wrapOutput(records, count) {
   return records;
 }
 
-function inferRules(value, path) {
+function inferRules(value, path, formatOverrides) {
   const rules = [];
 
   function visit(current, currentPath) {
     if (Array.isArray(current)) {
-      rules.push(makeRule(currentPath, "array", getGeneratorName(currentPath, current), current));
+      rules.push(makeRule(currentPath, "array", getGeneratorName(currentPath, current, formatOverrides), current));
 
       if (current.length) {
         visit(current[0], `${currentPath}[0]`);
@@ -176,7 +179,7 @@ function inferRules(value, path) {
       return;
     }
 
-    rules.push(makeRule(currentPath, getType(current), getGeneratorName(currentPath, current), current));
+    rules.push(makeRule(currentPath, getType(current), getGeneratorName(currentPath, current, formatOverrides), current));
   }
 
   visit(value, path);
@@ -192,35 +195,44 @@ function makeRule(path, type, generator, example) {
   };
 }
 
-function generateValue(value, path, index, random) {
+function generateValue(value, path, index, random, formatOverrides) {
   if (Array.isArray(value)) {
     const itemTemplate = value.length ? value[0] : "";
     const length = Math.max(1, Math.min(4, value.length + randomInt(random, 0, 2)));
-    return Array.from({ length }, (_, itemIndex) => generateValue(itemTemplate, `${path}[${itemIndex}]`, index + itemIndex, random));
+    return Array.from({ length }, (_, itemIndex) => generateValue(itemTemplate, `${path}[${itemIndex}]`, index + itemIndex, random, formatOverrides));
   }
 
   if (isPlainObject(value)) {
     const output = {};
     Object.keys(value).forEach((key) => {
-      output[key] = generateValue(value[key], `${path}.${escapePathKey(key)}`, index, random);
+      output[key] = generateValue(value[key], `${path}.${escapePathKey(key)}`, index, random, formatOverrides);
     });
     return output;
   }
 
+  if (getFormatOverride(path, formatOverrides) || (typeof value === "string" && isNumericString(value))) {
+    return mockPrimitive(value, path, index, random, formatOverrides);
+  }
+
   if (nullableFields.checked && value === null) {
-    return random() < 0.55 ? null : mockPrimitive("", path, index, random);
+    return random() < 0.55 ? null : mockPrimitive("", path, index, random, formatOverrides);
   }
 
   if (nullableFields.checked && random() < 0.03) {
     return null;
   }
 
-  return mockPrimitive(value, path, index, random);
+  return mockPrimitive(value, path, index, random, formatOverrides);
 }
 
-function mockPrimitive(value, path, index, random) {
+function mockPrimitive(value, path, index, random, formatOverrides) {
   const name = path.toLowerCase();
   const field = normalizeFieldName(path);
+  const customPattern = getFormatOverride(path, formatOverrides);
+
+  if (customPattern) {
+    return applyFormatPattern(customPattern, random);
+  }
 
   if (typeof value === "boolean") {
     return random() > 0.5;
@@ -246,6 +258,10 @@ function mockPrimitive(value, path, index, random) {
 
   if (field.includes("phone") || field.includes("mobile") || field.includes("telephone")) {
     return mockPhoneNumber(random);
+  }
+
+  if (typeof value === "string" && isNumericString(value)) {
+    return mockNumericString(value.length, random);
   }
 
   if (field.includes("firstname")) {
@@ -329,6 +345,83 @@ function mockText(value, random) {
   return `${capitalize(pick(words, random))} ${capitalize(pick(words, random))}`;
 }
 
+function parseFormatOverrides(input) {
+  const overrides = {
+    exact: new Map(),
+    field: new Map()
+  };
+
+  input.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed || trimmed.startsWith("#")) {
+      return;
+    }
+
+    const separatorIndex = findFormatSeparator(trimmed);
+
+    if (separatorIndex === -1) {
+      return;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const pattern = trimmed.slice(separatorIndex + 1).trim();
+
+    if (!key || !pattern) {
+      return;
+    }
+
+    if (key.startsWith("$")) {
+      overrides.exact.set(key, pattern);
+    } else {
+      overrides.field.set(normalizeFormatKey(key), pattern);
+    }
+  });
+
+  return overrides;
+}
+
+function findFormatSeparator(value) {
+  const equals = value.indexOf("=");
+  const colon = value.indexOf(":");
+
+  if (equals === -1) {
+    return colon;
+  }
+
+  if (colon === -1) {
+    return equals;
+  }
+
+  return Math.min(equals, colon);
+}
+
+function getFormatOverride(path, overrides) {
+  if (!overrides) {
+    return "";
+  }
+
+  return overrides.exact.get(path) || overrides.field.get(normalizeFieldName(path)) || "";
+}
+
+function applyFormatPattern(pattern, random) {
+  return Array.from(pattern, (char) => {
+    if (char === "#") {
+      return String(randomInt(random, 0, 9));
+    }
+
+    if (char === "?") {
+      return String.fromCharCode(65 + randomInt(random, 0, 25));
+    }
+
+    return char;
+  }).join("");
+}
+
+function mockNumericString(length, random) {
+  return Array.from({ length }, () => randomInt(random, 0, 9)).join("");
+}
+
 function mockPhoneNumber(random) {
   const area = randomInt(random, 200, 989);
   const prefix = randomInt(random, 200, 999);
@@ -336,9 +429,10 @@ function mockPhoneNumber(random) {
   return `(${area}) ${prefix}-${line}`;
 }
 
-function getGeneratorName(path, value) {
+function getGeneratorName(path, value, formatOverrides) {
   const name = path.toLowerCase();
   const field = normalizeFieldName(path);
+  const customPattern = getFormatOverride(path, formatOverrides);
 
   if (Array.isArray(value)) {
     return "array";
@@ -346,6 +440,10 @@ function getGeneratorName(path, value) {
 
   if (isPlainObject(value)) {
     return "object";
+  }
+
+  if (customPattern) {
+    return `format ${customPattern}`;
   }
 
   if (field === "id" || field.endsWith("id") || field.includes("userid")) {
@@ -358,6 +456,10 @@ function getGeneratorName(path, value) {
 
   if (field.includes("phone") || field.includes("mobile") || field.includes("telephone")) {
     return "phone";
+  }
+
+  if (typeof value === "string" && isNumericString(value)) {
+    return `${value.length}-digit string`;
   }
 
   if (field.includes("name")) {
@@ -540,7 +642,15 @@ function looksLikeIsoDate(value) {
 function normalizeFieldName(path) {
   const match = path.match(/(?:\.|\$)(?:"([^"]+)"|([^.[\]]+))(?:\[\d+\])?$/);
   const key = match ? (match[1] || match[2]) : path;
-  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return normalizeFormatKey(key);
+}
+
+function normalizeFormatKey(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function isNumericString(value) {
+  return /^\d+$/.test(value);
 }
 
 function mockIsoDate(index, random) {
