@@ -20,10 +20,13 @@ const ruleRows = document.querySelector("#ruleRows");
 const ruleCount = document.querySelector("#ruleCount");
 const releaseStamp = document.querySelector("#releaseStamp");
 
-const appRelease = "20260610-2220";
+const appRelease = "20260610-2304";
 
 const samplePayload = {
   id: 1024,
+  contractNumber: "1234567",
+  policyNumber: "0459821",
+  claimNumber: "old",
   name: "Ada Lovelace",
   email: "ada@example.com",
   status: "active",
