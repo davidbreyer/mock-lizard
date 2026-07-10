@@ -20,7 +20,7 @@ const ruleRows = document.querySelector("#ruleRows");
 const ruleCount = document.querySelector("#ruleCount");
 const releaseStamp = document.querySelector("#releaseStamp");
 
-const appRelease = "20260617-2109";
+const appRelease = "20260709-2041";
 
 const samplePayload = {
   id: 1024,
